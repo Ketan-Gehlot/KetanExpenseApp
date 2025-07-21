@@ -1,0 +1,117 @@
+<!-- update index.html with FAB and ensure IDs for buttons -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ExpenseTracker Pro – Track Your Spending</title>
+    <link rel="stylesheet" href="style.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body data-theme="light">
+    <!-- Header -->
+    <header class="header">
+        <div class="container flex justify-between items-center py-16">
+            <div class="flex items-center gap-16">
+                <button id="sidebarToggle" class="sidebar-toggle md:hidden" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+                <h1 class="header-title">💰 ExpenseTracker Pro</h1>
+            </div>
+            <div class="flex items-center gap-16">
+                <button id="addExpenseBtn" type="button" class="btn btn--primary"><i class="fas fa-plus"></i> Add Expense</button>
+                <button id="exportBtn" type="button" class="btn btn--outline"><i class="fas fa-download"></i> Export</button>
+                <button id="themeToggle" type="button" class="theme-toggle" aria-label="Toggle theme"><i class="fas fa-moon"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main layout -->
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h2>Filters & Actions</h2>
+                    <button id="resetFilters" type="button" class="btn btn--outline btn--sm"><i class="fas fa-undo"></i> Reset</button>
+                </div>
+
+                <!-- Search -->
+                <div class="filter-section">
+                    <h3 class="filter-title">Search</h3>
+                    <div class="form-group"><input id="searchInput" type="text" class="form-control" placeholder="Search descriptions…" /></div>
+                </div>
+
+                <!-- Date range -->
+                <div class="filter-section">
+                    <h3 class="filter-title">Date Range</h3>
+                    <div class="form-group"><label for="dateFrom" class="form-label">From</label><input id="dateFrom" type="date" class="form-control" /></div>
+                    <div class="form-group"><label for="dateTo" class="form-label">To</label><input id="dateTo" type="date" class="form-control" /></div>
+                </div>
+
+                <!-- Categories -->
+                <div class="filter-section">
+                    <h3 class="filter-title">Categories</h3>
+                    <div id="categoryFilters" class="category-filters"></div>
+                </div>
+
+                <!-- Amount -->
+                <div class="filter-section">
+                    <h3 class="filter-title">Amount Range</h3>
+                    <div class="amount-range">
+                        <div class="flex justify-between mb-8"><span class="amount-label">₹<span id="minAmountDisplay">0</span></span><span class="amount-label">₹<span id="maxAmountDisplay">1000</span></span></div>
+                        <input id="minAmount" type="range" class="range-slider" min="0" max="1000" value="0" />
+                        <input id="maxAmount" type="range" class="range-slider" min="0" max="1000" value="1000" />
+                    </div>
+                </div>
+
+                <!-- Data management -->
+                <div class="filter-section">
+                    <h3 class="filter-title">Data Management</h3>
+                    <button id="previewBtn" type="button" class="btn btn--outline btn--full-width mb-8"><i class="fas fa-eye"></i> Preview Data</button>
+                    <button id="resetDataBtn" type="button" class="btn btn--secondary btn--full-width"><i class="fas fa-trash"></i> Reset All Data</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main-content">
+            <!-- Loading -->
+            <div id="loadingState" class="loading-state hidden"><div class="loading-spinner"></div><p>Loading your expenses…</p></div>
+            <!-- Dashboard -->
+            <div id="dashboardContent" class="dashboard-content">
+                <!-- Metrics -->
+                <section id="metricsGrid" class="metrics-grid">
+                    <!-- metric cards identical as before (omitted for brevity) -->
+                    <div id="totalSpendCard" class="metric-card metric-card--primary"><div class="metric-icon"><i class="fas fa-rupee-sign"></i></div><div class="metric-content"><h3>Total Spend</h3><div id="totalSpend" class="metric-value">₹0.00</div><div id="totalSpendChange" class="metric-change positive"><i class="fas fa-arrow-up"></i><span>All time</span></div></div></div>
+                    <div id="monthlySpendCard" class="metric-card metric-card--secondary"><div class="metric-icon"><i class="fas fa-calendar-alt"></i></div><div class="metric-content"><h3>This Month</h3><div id="monthlySpend" class="metric-value">₹0.00</div><div id="monthlySpendChange" class="metric-change"><i class="fas fa-arrow-up"></i><span>vs last month</span></div></div></div>
+                    <div id="topCategoryCard" class="metric-card metric-card--accent"><div class="metric-icon"><i class="fas fa-chart-pie"></i></div><div class="metric-content"><h3>Top Category</h3><div id="topCategory" class="metric-value">–</div><div id="topCategoryAmount" class="metric-change"><span>₹0.00</span></div></div></div>
+                    <div id="avgExpenseCard" class="metric-card metric-card--info"><div class="metric-icon"><i class="fas fa-receipt"></i></div><div class="metric-content"><h3>Recent Transactions</h3><div id="recentCount" class="metric-value">0</div><div id="expenseCount" class="metric-change"><span>0 total</span></div></div></div>
+                </section>
+
+                <!-- Charts -->
+                <section class="charts-section"><div class="charts-grid"><div class="chart-container"><h3 class="chart-title">Monthly Spending Trends</h3><div class="chart-wrapper"><canvas id="monthlyChart"></canvas></div></div><div class="chart-container"><h3 class="chart-title">Category Distribution</h3><div class="chart-wrapper"><canvas id="categoryChart"></canvas></div></div></div></section>
+
+                <!-- Table -->
+                <section class="table-section"><div class="table-header"><h3>Expense Details</h3><div class="table-controls"><select id="sortBy" class="form-control"><option value="date-desc">Date (Newest)</option><option value="date-asc">Date (Oldest)</option><option value="amount-desc">Highest Amount</option><option value="amount-asc">Lowest Amount</option><option value="category">Category</option><option value="description">Description</option></select></div></div><div class="table-container"><table id="expensesTable" class="expenses-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Location</th><th class="text-right">Amount</th><th>Actions</th></tr></thead><tbody id="expensesTableBody"></tbody></table></div><div id="pagination" class="pagination"><button id="prevPage" class="btn btn--outline btn--sm" disabled type="button"><i class="fas fa-chevron-left"></i> Previous</button><span id="pageInfo" class="page-info">Page 1 of 1</span><button id="nextPage" class="btn btn--outline btn--sm" disabled type="button">Next <i class="fas fa-chevron-right"></i></button></div></section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Action Button (mobile) -->
+    <button id="fabAddExpense" class="fab" aria-label="Add expense"><i class="fas fa-plus"></i></button>
+
+    <!-- Modals identical to previous version (omitted for brevity) -->
+    <!-- Add/Edit Expense Modal -->
+    <div id="expenseModal" class="modal-overlay"><div class="modal"><div class="modal-header"><h2 id="modalTitle">Add New Expense</h2><button id="closeModal" class="modal-close" type="button">&times;</button></div><div class="modal-body"><form id="expenseForm"><div class="form-row"><div class="form-group"><label class="form-label" for="expenseDescription">Description *</label><input id="expenseDescription" class="form-control" type="text" required /></div><div class="form-group"><label class="form-label" for="expenseAmount">Amount (₹) *</label><input id="expenseAmount" class="form-control" type="number" step="0.01" min="0" required /></div></div><div class="form-row"><div class="form-group"><label class="form-label" for="expenseCategory">Category *</label><select id="expenseCategory" class="form-control" required><option value="">Select Category</option><option value="Food & Dining">Food & Dining</option><option value="Transportation">Transportation</option><option value="Bills & Utilities">Bills & Utilities</option><option value="Shopping">Shopping</option><option value="Entertainment">Entertainment</option><option value="Health & Fitness">Health & Fitness</option><option value="Travel">Travel</option><option value="Other">Other</option></select></div><div class="form-group"><label class="form-label" for="expenseDate">Date *</label><input id="expenseDate" class="form-control" type="date" required /></div></div><div class="form-group"><label class="form-label" for="expenseLocation">Location</label><input id="expenseLocation" class="form-control" type="text" placeholder="Optional – e.g. Mumbai" /></div></form><div id="expensePreview" class="expense-preview"><h4>Preview</h4><div class="preview-card"><div class="preview-details"><span class="preview-description">Enter details above…</span><span class="preview-meta">Category • Location • Date</span></div><span class="preview-amount">₹0.00</span></div></div></div><div class="modal-footer"><button id="cancelBtn" class="btn btn--outline" type="button">Cancel</button><button id="saveBtn" class="btn btn--primary" form="expenseForm" type="submit">Save Expense</button></div></div></div>
+
+    <!-- Confirmation, Preview modals same as earlier (omitted) -->
+    <div id="confirmModal" class="modal-overlay"><div class="modal modal--sm"><div class="modal-header"><h2 id="confirmTitle">Confirm Action</h2></div><div class="modal-body"><p id="confirmMessage">Are you sure?</p></div><div class="modal-footer"><button id="confirmCancel" class="btn btn--outline" type="button">Cancel</button><button id="confirmAction" class="btn btn--primary" type="button">Confirm</button></div></div></div>
+    <div id="previewModal" class="modal-overlay"><div class="modal modal--lg"><div class="modal-header"><h2>Data Preview & Export</h2><button id="closePreview" class="modal-close" type="button">&times;</button></div><div class="modal-body"><div class="preview-tabs"><button data-tab="summary" class="tab-btn active" type="button">Summary</button><button data-tab="export" class="tab-btn" type="button">Export Options</button></div><div id="summaryTab" class="tab-content"><div class="summary-stats"><div class="stat-item"><span class="stat-label">Total Expenses:</span><span id="previewTotal" class="stat-value">₹0.00</span></div><div class="stat-item"><span class="stat-label">Transaction Count:</span><span id="previewCount" class="stat-value">0</span></div><div class="stat-item"><span class="stat-label">Date Range:</span><span id="previewRange" class="stat-value">–</span></div><div class="stat-item"><span class="stat-label">Top Category:</span><span id="previewTopCat" class="stat-value">–</span></div></div></div><div id="exportTab" class="tab-content hidden"><div class="export-options"><button id="exportJSON" class="btn btn--primary btn--full-width mb-8" type="button"><i class="fas fa-code"></i> Export as JSON</button><button id="exportCSV" class="btn btn--secondary btn--full-width" type="button"><i class="fas fa-table"></i> Export as CSV</button></div></div></div></div></div>
+
+    <!-- Notifications & overlay -->
+    <div id="notification" class="notification"><div class="notification-content"><i class="notification-icon"></i><span class="notification-text"></span></div></div>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
