@@ -14,6 +14,14 @@ class ExpenseManager {
       'Travel',
       'Other'
     ];
+loadExpensesFromStorage() {
+  const stored = localStorage.getItem('expenses');
+  this.expenses = stored ? JSON.parse(stored) : [];
+}
+
+saveExpensesToStorage() {
+  localStorage.setItem('expenses', JSON.stringify(this.expenses));
+}
 
     // Props for pagination & sorting
     this.currentPage = 1;
@@ -51,19 +59,28 @@ class ExpenseManager {
     this.applyPreferredTheme();
     this.bindEvents();
     this.initializeFilters();
+    this.loadExpensesFromStorage();  // <-- Load saved expenses
 
     // Simulate fetch delay
     this.showLoading();
     setTimeout(() => {
       this.hideLoading();
+      this.loadExpensesFromStorage(); // <-- Add this
+setTimeout(() => {
+  this.hideLoading();
+  this.refreshAll();
+}, 600);
+
       this.refreshAll();
     }, 600);
   }
 
   applyPreferredTheme() {
+    const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initialTheme = prefersDark ? 'dark' : 'light';
+    const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
     document.body.setAttribute('data-theme', initialTheme);
+    document.documentElement.setAttribute('data-color-scheme', initialTheme);
     this.updateThemeIcon(initialTheme);
   }
 
@@ -71,9 +88,11 @@ class ExpenseManager {
     const currentTheme = document.body.getAttribute('data-theme');
     const next = currentTheme === 'dark' ? 'light' : 'dark';
     document.body.setAttribute('data-theme', next);
+    document.documentElement.setAttribute('data-color-scheme', next);
+    localStorage.setItem('theme', next);
     this.updateThemeIcon(next);
     this.showNotification('Theme switched!', 'info');
-    setTimeout(() => this.refreshCharts(), 250); // ensures chart colors refresh
+    setTimeout(() => this.refreshCharts(), 250);
   }
 
   updateThemeIcon(theme) {
@@ -96,6 +115,7 @@ class ExpenseManager {
       this.addSafeEventListener('#themeToggle', 'click', () => this.toggleTheme());
       this.addSafeEventListener('#addExpenseBtn', 'click', () => this.showExpenseModal());
       this.addSafeEventListener('#exportBtn', 'click', () => this.showPreviewModal());
+      this.addSafeEventListener('#previewBtn', 'click', () => this.showPreviewModal());
       
       // FAB button (mobile)
       this.addSafeEventListener('#fabAddExpense', 'click', () => this.showExpenseModal());
@@ -271,6 +291,7 @@ class ExpenseManager {
     const searchInput = this.$('#searchInput');
     if (searchInput) searchInput.value = '';
     this.initializeFilters();
+    this.loadExpensesFromStorage();  // <-- Load saved expenses
     this.applyFilters();
     this.showNotification('Filters reset.', 'info');
   }
@@ -403,6 +424,8 @@ class ExpenseManager {
     }
     this.hideExpenseModal();
     this.applyFilters();
+    this.saveExpensesToStorage(); // After updating/adding expense
+
   }
 
   editExpense(id) {
@@ -415,6 +438,8 @@ class ExpenseManager {
       this.expenses = this.expenses.filter(e => e.id !== id);
       this.applyFilters();
       this.showNotification('Expense deleted.', 'success');
+      this.saveExpensesToStorage(); // After deletion
+
     });
   }
 
@@ -423,6 +448,8 @@ class ExpenseManager {
       this.expenses = [];
       this.applyFilters();
       this.showNotification('All data cleared.', 'info');
+      this.saveExpensesToStorage(); // After clearing all
+
     });
   }
 
