@@ -6,7 +6,7 @@ class ExpenseManager {
     this.filteredExpenses = [];
     this.categories = [
       'Food & Dining',
-      'Transportation', 
+      'Transportation',
       'Bills & Utilities',
       'Shopping',
       'Entertainment',
@@ -14,14 +14,6 @@ class ExpenseManager {
       'Travel',
       'Other'
     ];
-loadExpensesFromStorage() {
-  const stored = localStorage.getItem('expenses');
-  this.expenses = stored ? JSON.parse(stored) : [];
-}
-
-saveExpensesToStorage() {
-  localStorage.setItem('expenses', JSON.stringify(this.expenses));
-}
 
     // Props for pagination & sorting
     this.currentPage = 1;
@@ -52,6 +44,23 @@ saveExpensesToStorage() {
     this.init();
   }
 
+  /**
+   * Loads expenses from local storage.
+   * @returns {void}
+   */
+  loadExpensesFromStorage() {
+    const stored = localStorage.getItem('expenses');
+    this.expenses = stored ? JSON.parse(stored) : [];
+  }
+
+  /**
+   * Saves expenses to local storage.
+   * @returns {void}
+   */
+  saveExpensesToStorage() {
+    localStorage.setItem('expenses', JSON.stringify(this.expenses));
+  }
+
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Init & theming                                                          */
   /* ──────────────────────────────────────────────────────────────────────── */
@@ -59,22 +68,20 @@ saveExpensesToStorage() {
     this.applyPreferredTheme();
     this.bindEvents();
     this.initializeFilters();
-    this.loadExpensesFromStorage();  // <-- Load saved expenses
+    this.loadExpensesFromStorage(); // Load saved expenses on initialization
 
     // Simulate fetch delay
     this.showLoading();
     setTimeout(() => {
       this.hideLoading();
-      this.loadExpensesFromStorage(); // <-- Add this
-setTimeout(() => {
-  this.hideLoading();
-  this.refreshAll();
-}, 600);
-
-      this.refreshAll();
+      this.refreshAll(); // Refresh all components after loading expenses
     }, 600);
   }
 
+  /**
+   * Applies the preferred theme (dark/light) based on local storage or system preference.
+   * @returns {void}
+   */
   applyPreferredTheme() {
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -84,6 +91,10 @@ setTimeout(() => {
     this.updateThemeIcon(initialTheme);
   }
 
+  /**
+   * Toggles between dark and light themes.
+   * @returns {void}
+   */
   toggleTheme() {
     const currentTheme = document.body.getAttribute('data-theme');
     const next = currentTheme === 'dark' ? 'light' : 'dark';
@@ -95,6 +106,11 @@ setTimeout(() => {
     setTimeout(() => this.refreshCharts(), 250);
   }
 
+  /**
+   * Updates the theme toggle icon based on the current theme.
+   * @param {string} theme - The current theme ('dark' or 'light').
+   * @returns {void}
+   */
   updateThemeIcon(theme) {
     const icon = document.querySelector('#themeToggle i');
     if (!icon) return;
@@ -104,19 +120,26 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Event binding                                                           */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Binds all necessary event listeners to DOM elements.
+   * @returns {void}
+   */
   bindEvents() {
     // Wait for DOM to be fully ready
     this.waitForElements([
       '#themeToggle', '#addExpenseBtn', '#exportBtn', '#fabAddExpense',
       '#sidebarToggle', '#sidebarOverlay', '#resetDataBtn',
-      '#expenseForm', '#closeModal', '#cancelBtn'
+      '#expenseForm', '#closeModal', '#cancelBtn', '#previewBtn',
+      '#searchInput', '#dateFrom', '#dateTo', '#minAmount', '#maxAmount', '#resetFilters',
+      '#sortBy', '#prevPage', '#nextPage', '#closePreview', '#exportJSON', '#exportCSV',
+      '#confirmCancel', '#confirmAction'
     ]).then(() => {
       // Header buttons
       this.addSafeEventListener('#themeToggle', 'click', () => this.toggleTheme());
       this.addSafeEventListener('#addExpenseBtn', 'click', () => this.showExpenseModal());
       this.addSafeEventListener('#exportBtn', 'click', () => this.showPreviewModal());
       this.addSafeEventListener('#previewBtn', 'click', () => this.showPreviewModal());
-      
+
       // FAB button (mobile)
       this.addSafeEventListener('#fabAddExpense', 'click', () => this.showExpenseModal());
 
@@ -151,17 +174,18 @@ setTimeout(() => {
 
       // Preview modal tabs & actions
       this.addSafeEventListener('#closePreview', 'click', () => this.hidePreviewModal());
-      
+
       // Tab buttons
       document.querySelectorAll('.tab-btn').forEach(btn =>
         btn.addEventListener('click', e => this.switchTab(e.target.dataset.tab))
       );
-      
+
       this.addSafeEventListener('#exportJSON', 'click', () => this.exportData('json'));
       this.addSafeEventListener('#exportCSV', 'click', () => this.exportData('csv'));
 
       // Confirmation modal controls
       this.addSafeEventListener('#confirmCancel', 'click', () => this.hideConfirmModal());
+      // The confirmAction button's event listener is set dynamically in showConfirmation
 
       // Live preview updates
       ['expenseDescription', 'expenseAmount', 'expenseCategory', 'expenseDate', 'expenseLocation'].forEach(id =>
@@ -183,7 +207,11 @@ setTimeout(() => {
     });
   }
 
-  // Helper to wait for elements to exist
+  /**
+   * Helper to wait for elements to exist in the DOM.
+   * @param {string[]} selectors - An array of CSS selectors.
+   * @returns {Promise<Element[]>} A promise that resolves with an array of found elements.
+   */
   waitForElements(selectors) {
     return new Promise((resolve) => {
       const checkElements = () => {
@@ -198,7 +226,13 @@ setTimeout(() => {
     });
   }
 
-  // Helper to safely add event listeners
+  /**
+   * Helper to safely add event listeners to elements.
+   * @param {string} selector - The CSS selector for the element.
+   * @param {string} event - The event type (e.g., 'click', 'input').
+   * @param {function} handler - The event handler function.
+   * @returns {void}
+   */
   addSafeEventListener(selector, event, handler) {
     const element = document.querySelector(selector);
     if (element) {
@@ -211,6 +245,11 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Helper (DOM)                                                            */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Shorthand for document.querySelector.
+   * @param {string} selector - The CSS selector.
+   * @returns {Element | null} The first element matching the selector, or null.
+   */
   $(selector) {
     return document.querySelector(selector);
   }
@@ -218,12 +257,21 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Loading State                                                           */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Shows the loading state and hides the dashboard content.
+   * @returns {void}
+   */
   showLoading() {
     const loading = this.$('#loadingState');
     const content = this.$('#dashboardContent');
     if (loading) loading.classList.remove('hidden');
     if (content) content.classList.add('hidden');
   }
+
+  /**
+   * Hides the loading state and shows the dashboard content.
+   * @returns {void}
+   */
   hideLoading() {
     const loading = this.$('#loadingState');
     const content = this.$('#dashboardContent');
@@ -234,15 +282,24 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Sidebar (mobile)                                                        */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Toggles the visibility of the sidebar and its overlay.
+   * @returns {void}
+   */
   toggleSidebar() {
     const sidebar = this.$('#sidebar');
     const overlay = this.$('#sidebarOverlay');
     if (!sidebar || !overlay) return;
-    
+
     const open = sidebar.classList.toggle('open');
     overlay.classList.toggle('active', open);
     document.body.style.overflow = open ? 'hidden' : '';
   }
+
+  /**
+   * Closes the sidebar and its overlay.
+   * @returns {void}
+   */
   closeSidebar() {
     const sidebar = this.$('#sidebar');
     const overlay = this.$('#sidebarOverlay');
@@ -254,12 +311,16 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Filters                                                                 */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Initializes the filter controls, including date range and category checkboxes.
+   * @returns {void}
+   */
   initializeFilters() {
     // Init date range to current month
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-    
+
     const dateFrom = this.$('#dateFrom');
     const dateTo = this.$('#dateTo');
     if (dateFrom) dateFrom.value = firstDay;
@@ -268,7 +329,7 @@ setTimeout(() => {
     // Categories checkboxes
     const catContainer = this.$('#categoryFilters');
     if (!catContainer) return;
-    
+
     catContainer.innerHTML = '';
     this.categories.forEach(cat => {
       const id = `cat-${cat.replace(/\s+/g, '-').toLowerCase()}`;
@@ -287,23 +348,30 @@ setTimeout(() => {
     this.updateAmountDisplay();
   }
 
+  /**
+   * Resets all filter controls to their default values and re-applies filters.
+   * @returns {void}
+   */
   resetFilters() {
     const searchInput = this.$('#searchInput');
     if (searchInput) searchInput.value = '';
     this.initializeFilters();
-    this.loadExpensesFromStorage();  // <-- Load saved expenses
-    this.applyFilters();
+    this.applyFilters(); // Apply filters after resetting, no need to load from storage again here
     this.showNotification('Filters reset.', 'info');
   }
 
+  /**
+   * Updates the amount range sliders and ensures min is not greater than max.
+   * @returns {void}
+   */
   updateAmountRange() {
     const minSlider = this.$('#minAmount');
     const maxSlider = this.$('#maxAmount');
     if (!minSlider || !maxSlider) return;
-    
+
     const min = parseFloat(minSlider.value);
     const max = parseFloat(maxSlider.value);
-    
+
     // Ensure consistency
     if (min > max) {
       minSlider.value = max;
@@ -312,16 +380,24 @@ setTimeout(() => {
     this.applyFilters();
   }
 
+  /**
+   * Updates the displayed values for the amount range sliders.
+   * @returns {void}
+   */
   updateAmountDisplay() {
     const minAmount = this.$('#minAmount');
     const maxAmount = this.$('#maxAmount');
     const minDisplay = this.$('#minAmountDisplay');
     const maxDisplay = this.$('#maxAmountDisplay');
-    
+
     if (minAmount && minDisplay) minDisplay.textContent = minAmount.value;
     if (maxAmount && maxDisplay) maxDisplay.textContent = maxAmount.value;
   }
 
+  /**
+   * Applies all active filters to the expenses and updates the displayed list.
+   * @returns {void}
+   */
   applyFilters() {
     const searchInput = this.$('#searchInput');
     const dateFrom = this.$('#dateFrom');
@@ -329,20 +405,25 @@ setTimeout(() => {
     const minAmount = this.$('#minAmount');
     const maxAmount = this.$('#maxAmount');
     const catContainer = this.$('#categoryFilters');
-    
+
     const term = searchInput ? searchInput.value.trim().toLowerCase() : '';
     const from = dateFrom ? new Date(dateFrom.value) : new Date(0);
     const to = dateTo ? new Date(dateTo.value) : new Date();
+    // Set 'to' date to end of day to include expenses on the 'to' date
+    if (dateTo && dateTo.value) {
+      to.setHours(23, 59, 59, 999);
+    }
+
     const minAmt = minAmount ? parseFloat(minAmount.value) : 0;
     const maxAmt = maxAmount ? parseFloat(maxAmount.value) : Infinity;
-    const activeCats = catContainer ? 
-      Array.from(catContainer.querySelectorAll('input:checked')).map(cb => cb.value) : 
+    const activeCats = catContainer ?
+      Array.from(catContainer.querySelectorAll('input:checked')).map(cb => cb.value) :
       this.categories;
 
     this.filteredExpenses = this.expenses.filter(exp => {
       const d = new Date(exp.date);
-      const matchesTerm = exp.description.toLowerCase().includes(term) || 
-                         (exp.location && exp.location.toLowerCase().includes(term));
+      const matchesTerm = exp.description.toLowerCase().includes(term) ||
+        (exp.location && exp.location.toLowerCase().includes(term));
       const matchesDate = d >= from && d <= to;
       const matchesAmt = exp.amount >= minAmt && exp.amount <= maxAmt;
       const matchesCat = activeCats.includes(exp.category);
@@ -356,14 +437,19 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Expense CRUD                                                            */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Shows the expense modal for adding a new expense or editing an existing one.
+   * @param {object | null} expense - The expense object to edit, or null for a new expense.
+   * @returns {void}
+   */
   showExpenseModal(expense = null) {
     this.editingExpense = expense;
     const modal = this.$('#expenseModal');
     if (!modal) return;
-    
+
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-    
+
     const title = this.$('#modalTitle');
     if (title) title.textContent = expense ? 'Edit Expense' : 'Add New Expense';
 
@@ -378,7 +464,7 @@ setTimeout(() => {
       const categoryInput = this.$('#expenseCategory');
       const dateInput = this.$('#expenseDate');
       const locationInput = this.$('#expenseLocation');
-      
+
       if (descInput) descInput.value = expense.description;
       if (amountInput) amountInput.value = expense.amount;
       if (categoryInput) categoryInput.value = expense.category;
@@ -387,7 +473,11 @@ setTimeout(() => {
     }
     this.updateFormPreview();
   }
-  
+
+  /**
+   * Hides the expense modal.
+   * @returns {void}
+   */
   hideExpenseModal() {
     const modal = this.$('#expenseModal');
     if (modal) {
@@ -397,15 +487,20 @@ setTimeout(() => {
     }
   }
 
+  /**
+   * Handles the submission of the expense form (add or edit).
+   * @param {Event} e - The submit event.
+   * @returns {void}
+   */
   handleExpenseSubmit(e) {
     e.preventDefault();
-    
+
     const descInput = this.$('#expenseDescription');
     const amountInput = this.$('#expenseAmount');
     const categoryInput = this.$('#expenseCategory');
     const dateInput = this.$('#expenseDate');
     const locationInput = this.$('#expenseLocation');
-    
+
     const data = {
       description: descInput ? descInput.value.trim() : '',
       amount: amountInput ? parseFloat(amountInput.value) : 0,
@@ -413,55 +508,74 @@ setTimeout(() => {
       date: dateInput ? dateInput.value : '',
       location: locationInput ? locationInput.value.trim() : ''
     };
-    
+
     if (this.editingExpense) {
       Object.assign(this.editingExpense, data);
       this.showNotification('Expense updated.', 'success');
     } else {
-      const nextId = (Math.max(0, ...this.expenses.map(x => x.id))) + 1;
+      const nextId = this.expenses.length > 0 ? (Math.max(...this.expenses.map(x => x.id))) + 1 : 1;
       this.expenses.unshift({ id: nextId, ...data });
       this.showNotification('Expense added.', 'success');
     }
     this.hideExpenseModal();
-    this.applyFilters();
-    this.saveExpensesToStorage(); // After updating/adding expense
-
+    this.saveExpensesToStorage(); // Save expenses after adding/updating
+    this.applyFilters(); // Re-apply filters to update the displayed list
   }
 
+  /**
+   * Initiates the edit process for a specific expense.
+   * @param {number} id - The ID of the expense to edit.
+   * @returns {void}
+   */
   editExpense(id) {
     const exp = this.expenses.find(e => e.id === id);
     if (exp) this.showExpenseModal(exp);
   }
 
+  /**
+   * Deletes a specific expense after confirmation.
+   * @param {number} id - The ID of the expense to delete.
+   * @returns {void}
+   */
   deleteExpense(id) {
     this.showConfirmation('Delete Expense', 'This action cannot be undone – proceed?', () => {
       this.expenses = this.expenses.filter(e => e.id !== id);
+      this.saveExpensesToStorage(); // Save expenses after deletion
       this.applyFilters();
       this.showNotification('Expense deleted.', 'success');
-      this.saveExpensesToStorage(); // After deletion
-
     });
   }
 
+  /**
+   * Confirms and resets all expense data.
+   * @returns {void}
+   */
   confirmReset() {
     this.showConfirmation('Reset All Data', 'Permanently delete all expenses?', () => {
       this.expenses = [];
+      this.saveExpensesToStorage(); // Save empty array after clearing all
       this.applyFilters();
       this.showNotification('All data cleared.', 'info');
-      this.saveExpensesToStorage(); // After clearing all
-
     });
   }
 
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Metrics / Charts                                                        */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Refreshes all dashboard components: metrics, charts, and table.
+   * @returns {void}
+   */
   refreshAll() {
     this.refreshMetrics();
     this.refreshCharts();
     this.refreshTable();
   }
 
+  /**
+   * Recalculates and updates the displayed metrics.
+   * @returns {void}
+   */
   refreshMetrics() {
     const total = this.filteredExpenses.reduce((s, e) => s + e.amount, 0);
     const totalEl = this.$('#totalSpend');
@@ -495,7 +609,7 @@ setTimeout(() => {
     if (topCatAmtEl) topCatAmtEl.innerHTML = `<span>${this.fmt(topVal)}</span>`;
 
     // Recent 7 days
-    const sevenAgo = new Date(); 
+    const sevenAgo = new Date();
     sevenAgo.setDate(sevenAgo.getDate() - 7);
     const recent = this.filteredExpenses.filter(e => new Date(e.date) >= sevenAgo);
     const recentEl = this.$('#recentCount');
@@ -504,10 +618,16 @@ setTimeout(() => {
     if (countEl) countEl.innerHTML = `<span>${this.filteredExpenses.length} total</span>`;
   }
 
+  /**
+   * Updates the display for monthly spending change compared to the previous month.
+   * @param {number} curr - Current month's total spending.
+   * @param {number} prev - Previous month's total spending.
+   * @returns {void}
+   */
   setMonthlyChange(curr, prev) {
     const el = this.$('#monthlySpendChange');
     if (!el) return;
-    
+
     if (prev === 0) {
       el.className = 'metric-change neutral';
       el.innerHTML = '<i class="fas fa-minus"></i><span>No previous data</span>';
@@ -526,15 +646,23 @@ setTimeout(() => {
     }
   }
 
+  /**
+   * Refreshes both monthly and category charts.
+   * @returns {void}
+   */
   refreshCharts() {
     this.renderMonthlyChart();
     this.renderCategoryChart();
   }
 
+  /**
+   * Renders or updates the monthly spending bar chart.
+   * @returns {void}
+   */
   renderMonthlyChart() {
     const canvas = this.$('#monthlyChart');
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (this.monthlyChart) this.monthlyChart.destroy();
 
@@ -553,44 +681,48 @@ setTimeout(() => {
 
     this.monthlyChart = new Chart(ctx, {
       type: 'bar',
-      data: { 
-        labels, 
-        datasets: [{ 
-          data: values, 
-          backgroundColor: '#3b82f6', 
-          borderRadius: 6, 
-          borderSkipped: false 
-        }] 
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: '#3b82f6',
+          borderRadius: 6,
+          borderSkipped: false
+        }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { 
-          legend: { display: false }, 
-          tooltip: { 
-            callbacks: { 
-              label: c => `Spending: ${this.fmt(c.parsed.y)}` 
-            } 
-          } 
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: c => `Spending: ${this.fmt(c.parsed.y)}`
+            }
+          }
         },
-        scales: { 
-          y: { 
-            beginAtZero: true, 
-            ticks: { callback: v => this.fmt(v) }, 
-            grid: { color: 'rgba(0,0,0,0.1)' } 
-          }, 
-          x: { 
-            grid: { display: false } 
-          } 
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: v => this.fmt(v) },
+            grid: { color: 'rgba(0,0,0,0.1)' }
+          },
+          x: {
+            grid: { display: false }
+          }
         }
       }
     });
   }
 
+  /**
+   * Renders or updates the category distribution doughnut chart.
+   * @returns {void}
+   */
   renderCategoryChart() {
     const canvas = this.$('#categoryChart');
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (this.categoryChart) this.categoryChart.destroy();
 
@@ -598,7 +730,7 @@ setTimeout(() => {
     this.filteredExpenses.forEach(e => { totals[e.category] = (totals[e.category] || 0) + e.amount; });
     const labels = Object.keys(totals);
     const values = Object.values(totals);
-    
+
     if (labels.length === 0) {
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.font = '14px sans-serif';
@@ -607,40 +739,40 @@ setTimeout(() => {
       ctx.fillText('No data to display', ctx.canvas.width / 2, ctx.canvas.height / 2);
       return;
     }
-    
+
     this.categoryChart = new Chart(ctx, {
       type: 'doughnut',
-      data: { 
-        labels, 
-        datasets: [{ 
-          data: values, 
-          backgroundColor: this.chartColors.slice(0, labels.length), 
-          borderColor: '#fff', 
-          borderWidth: 2, 
-          hoverOffset: 8 
-        }] 
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: this.chartColors.slice(0, labels.length),
+          borderColor: '#fff',
+          borderWidth: 2,
+          hoverOffset: 8
+        }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { 
-          legend: { 
-            position: 'bottom', 
-            labels: { 
-              usePointStyle: true, 
-              padding: 16, 
-              font: { size: 12 } 
-            } 
-          }, 
-          tooltip: { 
-            callbacks: { 
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              padding: 16,
+              font: { size: 12 }
+            }
+          },
+          tooltip: {
+            callbacks: {
               label: c => {
                 const total = values.reduce((a, b) => a + b, 0);
                 const pct = ((c.parsed / total) * 100).toFixed(1);
                 return `${c.label}: ${this.fmt(c.parsed)} (${pct}%)`;
-              } 
-            } 
-          } 
+              }
+            }
+          }
         }
       }
     });
@@ -649,11 +781,15 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Table                                                                    */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Refreshes the expense table with filtered and sorted data.
+   * @returns {void}
+   */
   refreshTable() {
     this.sortExpenses();
     const tbody = this.$('#expensesTableBody');
     if (!tbody) return;
-    
+
     const start = (this.currentPage - 1) * this.itemsPerPage;
     const rows = this.filteredExpenses.slice(start, start + this.itemsPerPage);
 
@@ -665,6 +801,11 @@ setTimeout(() => {
     this.updatePagination();
   }
 
+  /**
+   * Renders a single expense row for the table.
+   * @param {object} exp - The expense object.
+   * @returns {string} The HTML string for the table row.
+   */
   renderRow(exp) {
     return `<tr>
       <td class="date-cell">${this.fmtDate(exp.date)}</td>
@@ -679,6 +820,10 @@ setTimeout(() => {
     </tr>`;
   }
 
+  /**
+   * Sorts the filtered expenses based on the current sort criteria.
+   * @returns {void}
+   */
   sortExpenses() {
     const map = {
       'date-asc': (a, b) => new Date(a.date) - new Date(b.date),
@@ -691,6 +836,11 @@ setTimeout(() => {
     this.filteredExpenses.sort(map[this.currentSort] || map['date-desc']);
   }
 
+  /**
+   * Changes the current page of the expense table.
+   * @param {number} dir - The direction to change the page (-1 for previous, 1 for next).
+   * @returns {void}
+   */
   changePage(dir) {
     const totalPages = Math.max(1, Math.ceil(this.filteredExpenses.length / this.itemsPerPage));
     const next = this.currentPage + dir;
@@ -700,12 +850,16 @@ setTimeout(() => {
     }
   }
 
+  /**
+   * Updates the pagination controls (buttons and page info).
+   * @returns {void}
+   */
   updatePagination() {
     const totalPages = Math.max(1, Math.ceil(this.filteredExpenses.length / this.itemsPerPage));
     const prevBtn = this.$('#prevPage');
     const nextBtn = this.$('#nextPage');
     const pageInfo = this.$('#pageInfo');
-    
+
     if (prevBtn) prevBtn.disabled = this.currentPage === 1;
     if (nextBtn) nextBtn.disabled = this.currentPage === totalPages;
     if (pageInfo) pageInfo.textContent = `Page ${this.currentPage} of ${totalPages} (${this.filteredExpenses.length} expenses)`;
@@ -714,6 +868,10 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Preview & export                                                        */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Shows the data preview and export modal.
+   * @returns {void}
+   */
   showPreviewModal() {
     this.updatePreviewData();
     const modal = this.$('#previewModal');
@@ -722,6 +880,11 @@ setTimeout(() => {
       document.body.style.overflow = 'hidden';
     }
   }
+
+  /**
+   * Hides the data preview and export modal.
+   * @returns {void}
+   */
   hidePreviewModal() {
     const modal = this.$('#previewModal');
     if (modal) {
@@ -729,6 +892,12 @@ setTimeout(() => {
       document.body.style.overflow = '';
     }
   }
+
+  /**
+   * Switches between the "Summary" and "Export Options" tabs in the preview modal.
+   * @param {string} tab - The ID of the tab to switch to ('summary' or 'export').
+   * @returns {void}
+   */
   switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
     const summaryTab = this.$('#summaryTab');
@@ -737,14 +906,18 @@ setTimeout(() => {
     if (exportTab) exportTab.classList.toggle('hidden', tab !== 'export');
   }
 
+  /**
+   * Updates the summary data displayed in the preview modal.
+   * @returns {void}
+   */
   updatePreviewData() {
     const total = this.filteredExpenses.reduce((s, e) => s + e.amount, 0);
     const totalEl = this.$('#previewTotal');
     if (totalEl) totalEl.textContent = this.fmt(total);
-    
+
     const countEl = this.$('#previewCount');
     if (countEl) countEl.textContent = this.filteredExpenses.length;
-    
+
     const rangeEl = this.$('#previewRange');
     if (this.filteredExpenses.length && rangeEl) {
       const dates = this.filteredExpenses.map(e => new Date(e.date));
@@ -754,7 +927,7 @@ setTimeout(() => {
     } else if (rangeEl) {
       rangeEl.textContent = '–';
     }
-    
+
     const topCatEl = this.$('#previewTopCat');
     if (topCatEl) {
       const catTotals = this.filteredExpenses.reduce((acc, e) => {
@@ -766,6 +939,11 @@ setTimeout(() => {
     }
   }
 
+  /**
+   * Exports the filtered expense data in either JSON or CSV format.
+   * @param {string} fmt - The desired export format ('json' or 'csv').
+   * @returns {void}
+   */
   exportData(fmt) {
     const data = {
       exportDate: new Date().toISOString(),
@@ -779,14 +957,14 @@ setTimeout(() => {
       filename = `expenses_${new Date().toISOString().split('T')[0]}.json`;
     } else {
       const headers = 'ID,Date,Description,Category,Location,Amount';
-      const rows = this.filteredExpenses.map(e => `${e.id},${e.date},"${e.description}","${e.category}","${e.location || ''}",${e.amount}`);
+      const rows = this.filteredExpenses.map(e => `${e.id},${e.date},"${e.description.replace(/"/g, '""')}","${e.category.replace(/"/g, '""')}","${(e.location || '').replace(/"/g, '""')}",${e.amount}`);
       blob = new Blob([[headers, ...rows].join('\n')], { type: 'text/csv' });
       filename = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
     }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; 
-    a.download = filename; 
+    a.href = url;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
     this.showNotification(`Exported as ${fmt.toUpperCase()}.`, 'success');
@@ -795,29 +973,45 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Confirmation modal                                                      */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Shows a confirmation modal with a custom title, message, and a callback for confirmation.
+   * @param {string} title - The title of the confirmation modal.
+   * @param {string} msg - The message to display in the confirmation modal.
+   * @param {function} onConfirm - The callback function to execute if the user confirms.
+   * @returns {void}
+   */
   showConfirmation(title, msg, onConfirm) {
     const titleEl = this.$('#confirmTitle');
     const msgEl = this.$('#confirmMessage');
     const modal = this.$('#confirmModal');
-    
+
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.textContent = msg;
-    
+
     const actBtn = this.$('#confirmAction');
     if (actBtn) {
-      const clone = actBtn.cloneNode(true);
-      actBtn.replaceWith(clone);
-      clone.addEventListener('click', () => { 
-        onConfirm(); 
-        this.hideConfirmModal(); 
+      // Remove existing event listener to prevent multiple calls
+      const old_element = actBtn;
+      const new_element = old_element.cloneNode(true);
+      old_element.parentNode.replaceChild(new_element, old_element);
+
+      // Add new event listener
+      this.$('#confirmAction').addEventListener('click', () => {
+        onConfirm();
+        this.hideConfirmModal();
       });
     }
-    
+
     if (modal) {
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
     }
   }
+
+  /**
+   * Hides the confirmation modal.
+   * @returns {void}
+   */
   hideConfirmModal() {
     const modal = this.$('#confirmModal');
     if (modal) {
@@ -829,18 +1023,24 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Notifications                                                           */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Displays a temporary notification message.
+   * @param {string} msg - The message to display.
+   * @param {string} type - The type of notification ('info', 'success', 'error').
+   * @returns {void}
+   */
   showNotification(msg, type = 'info') {
     const notif = this.$('#notification');
     if (!notif) return;
-    
+
     notif.className = `notification ${type}`;
     const textEl = notif.querySelector('.notification-text');
     if (textEl) textEl.textContent = msg;
-    
+
     const iconMap = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
     const iconEl = notif.querySelector('.notification-icon');
     if (iconEl) iconEl.className = `notification-icon fas ${iconMap[type]}`;
-    
+
     notif.classList.add('show');
     setTimeout(() => notif.classList.remove('show'), 3000);
   }
@@ -848,13 +1048,17 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Form preview                                                            */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Updates the live preview of the expense form based on current input values.
+   * @returns {void}
+   */
   updateFormPreview() {
     const descInput = this.$('#expenseDescription');
     const amountInput = this.$('#expenseAmount');
     const categoryInput = this.$('#expenseCategory');
     const locationInput = this.$('#expenseLocation');
     const dateInput = this.$('#expenseDate');
-    
+
     const desc = descInput ? (descInput.value || 'Enter details above…') : 'Enter details above…';
     const amt = amountInput ? (parseFloat(amountInput.value) || 0) : 0;
     const cat = categoryInput ? (categoryInput.value || 'Category') : 'Category';
@@ -864,7 +1068,7 @@ setTimeout(() => {
     const descEl = this.$('.preview-description');
     const metaEl = this.$('.preview-meta');
     const amtEl = this.$('.preview-amount');
-    
+
     if (descEl) descEl.textContent = desc;
     if (metaEl) metaEl.textContent = `${cat} • ${loc} • ${this.fmtDate(date)}`;
     if (amtEl) amtEl.textContent = this.fmt(amt);
@@ -873,23 +1077,40 @@ setTimeout(() => {
   /* ──────────────────────────────────────────────────────────────────────── */
   /* Utilities                                                               */
   /* ──────────────────────────────────────────────────────────────────────── */
+  /**
+   * Formats a number as Indian Rupee currency.
+   * @param {number} num - The number to format.
+   * @returns {string} The formatted currency string.
+   */
   fmt(num) {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(num);
   }
+
+  /**
+   * Formats a date string into a short, numeric, and year format.
+   * @param {string} d - The date string.
+   * @returns {string} The formatted date string.
+   */
   fmtDate(d) {
     const date = new Date(d);
     if (isNaN(date.getTime())) return d;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
+
+  /**
+   * Returns the CSS class for a given category for styling.
+   * @param {string} cat - The category name.
+   * @returns {string} The corresponding CSS class.
+   */
   getCatClass(cat) {
     const map = {
-      'Food & Dining': 'category-food', 
-      'Transportation': 'category-transportation', 
+      'Food & Dining': 'category-food',
+      'Transportation': 'category-transportation',
       'Bills & Utilities': 'category-bills',
-      'Shopping': 'category-shopping', 
-      'Entertainment': 'category-entertainment', 
+      'Shopping': 'category-shopping',
+      'Entertainment': 'category-entertainment',
       'Health & Fitness': 'category-health',
-      'Travel': 'category-travel', 
+      'Travel': 'category-travel',
       'Other': 'category-other'
     };
     return map[cat] || 'category-other';
