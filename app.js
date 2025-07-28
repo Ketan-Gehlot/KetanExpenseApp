@@ -344,7 +344,7 @@ class ExpenseManager {
     const minAmount = this.$('#minAmount');
     const maxAmount = this.$('#maxAmount');
     if (minAmount) minAmount.value = 0;
-    if (maxAmount) maxAmount.value = 1000;
+    if (maxAmount) maxAmount.value = 1000000;
     this.updateAmountDisplay();
   }
 
